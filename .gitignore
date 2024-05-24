@@ -161,3 +161,7 @@ cython_debug/
 
 # MacOS bullshit
 .DS_Store
+
+
+# project specifics
+data/
