@@ -27,12 +27,12 @@ class MyKANLayer(nn.Module):
         # The spline function requires three parameters: knots, coeff, and degree
         # knots: the grid points for the spline
         # self.knots = nn.Parameter(torch.linspace(grid_range[0], grid_range[1], steps=grid + 1, device=device).repeat(size, 1)).requires_grad_(False)
-        self.knots = nn.Parameter(torch.linspace(grid_range[0], grid_range[1], steps=grid + 1, device=device)).requires_grad_(False)
+        self.knots = nn.Parameter(torch.linspace(grid_range[0], grid_range[1], steps=grid + 1, device=device), requires_grad=False)
 
         # coeff: the coefficients for the spline - these are learnable!
         # I am wrapping them in a parameter since that is what they are
         # grid + 
-        self.coeff = nn.Parameter(0.1 * torch.randn(size, 1 + degree, device=device)).requires_grad_(True)
+        self.coeff = nn.Parameter(0.1 * torch.randn(size, 1 + degree, device=device), requires_grad=True)
 
 
     def forward(self, x):
@@ -70,10 +70,6 @@ class MyKANLayer(nn.Module):
 
             taylor_values = self.evaluate_taylor_series(x[i], coeff, self.degree)
             out[i] = taylor_values
-
-        
-        # plot the spline functions (optional)
-        # self.plot)
 
 
         # reshape the output to be of shape (out_dim, in_dim, batch_size)
@@ -120,6 +116,7 @@ class MyKANLayer(nn.Module):
 
 
     def evaluate_taylor_series(self, x, coeff, degree):
+        # Evaluate the Taylor series of x using the coefficients
         exp = torch.arange(degree+1).view(1, -1).repeat(x.shape[0], 1)
         powed = torch.pow(x.view(-1, 1), exp)
         

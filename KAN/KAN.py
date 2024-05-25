@@ -19,6 +19,12 @@ class MyKAN(nn.Module):
 
     # x should only be passed in batches
     def forward(self, x):
+
+        # ensure the input is a vector
+        # This means images are flattened
+        x = x.view(x.size(0), -1)
+
+
         for l in range(self.depth):
             x = self.act_fun[l](x)
             

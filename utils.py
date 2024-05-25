@@ -256,3 +256,16 @@ def add_symbolic(name, fun):
     exec(f"globals()['{name}'] = sympy.Function('{name}')")
     SYMBOLIC_LIB[name] = (fun, globals()[name])
     
+
+
+
+def try_gpu():
+    """
+    If GPU is available, return torch.device as cuda:0; else return torch.device
+    as cpu.
+    """
+    if torch.cuda.is_available():
+        device = torch.device('cuda:0')
+    else:
+        device = torch.device('cpu')
+    return device
