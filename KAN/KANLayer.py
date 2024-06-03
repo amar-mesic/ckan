@@ -19,18 +19,17 @@ class MyKANLayer(nn.Module):
         self.in_dim = in_dim
         self.out_dim = out_dim
         self.degree = degree
+        self.grid = grid
         self.grid_range = grid_range
         self.cache = None
         self.approx_type = approx_type
 
         # The spline function requires three parameters: knots, coeff, and degree
         # knots: the grid points for the spline
-        # self.knots = nn.Parameter(torch.linspace(grid_range[0], grid_range[1], steps=grid + 1, device=device).repeat(size, 1)).requires_grad_(False)
         self.knots = nn.Parameter(torch.linspace(grid_range[0], grid_range[1], steps=grid + 1, device=device).repeat(size, 1), requires_grad=False)
 
         # coeff: the coefficients for the spline - these are learnable!
         # I am wrapping them in a parameter since that is what they are
-        # 
         self.coeff = nn.Parameter(0.1 * torch.randn(size, grid + degree if approx_type == "spline" else 1 + degree, device=device), requires_grad=True)
 
 
@@ -74,6 +73,23 @@ class MyKANLayer(nn.Module):
         y = out.reshape(self.out_dim, self.in_dim, batch_size).sum(dim=1).transpose(0, 1)
 
         return y
+    
+
+    def update_grid(self, new_grid):
+        x = self.cache if self.cache is not None else torch.zeros(self.size, 1)
+        y = spline.coef2curve(x, self.knots, self.coeff, self.degree)
+        # Update the grid points for the spline
+        self.grid = new_grid
+        self.knots.data = torch.linspace(self.grid_range[0], self.grid_range[1], steps=new_grid + 1, device=self.knots.device).repeat(self.size, 1)
+
+        # self.coeff = nn.Parameter(0.1 * torch.randn(self.size, new_grid + self.degree if self.approx_type == "spline" else 1 + self.degree, device=self.coeff.device), requires_grad=True)
+        self.coeff.data = spline.curve2coef(x, y, self.knots, self.degree)
+
+        test = spline.coef2curve(x, self.knots, self.coeff, self.degree)
+        # print(f"Old y: {y[0:5, 0]}\nNew y: {test[0:5, 0]}")
+        # print("self.coeff.shape: ", self.coeff.shape)
+
+    
     
 
     def evaluate_taylor_series(self, x, coeff, degree):

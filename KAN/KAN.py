@@ -27,6 +27,7 @@ class MyKAN(nn.Module):
         self.act_fun = nn.ModuleList()
         self.depth = len(width) - 1
         self.width = width
+        self.grid = grid
 
         # create the layers here
         for l in range(self.depth):
@@ -46,6 +47,30 @@ class MyKAN(nn.Module):
             
         return x
     
+
+    def update_grid(self, grid):
+        for l in range(self.depth):
+            self.act_fun[l].update_grid(grid)
+
+    def train_model(self, n_epochs, train_iter, max_grid, step=2):
+        min_grid = self.grid
+
+        grid_update_freq = n_epochs // ((max_grid - min_grid) / step + 1)
+        print("Grid update frequency: ", grid_update_freq)
+
+        for epoch in n_epochs:
+            if epoch % grid_update_freq == 0 and self.grid < max_grid:
+                self.grid += step
+                print(f"Updating grid to {self.grid} in epoch {epoch}")
+                for l in range(self.depth):
+                    self.act_fun[l].update_grid(self.grid)
+                print("Grid updated to ", self.act_fun[0].grid)
+
+
+            train_iter(epoch)
+    
+
+
     def plot(self):
         for l in range(self.depth):
             self.act_fun[l].plot()
