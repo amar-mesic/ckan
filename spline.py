@@ -70,10 +70,13 @@ def coef2curve(x_eval, grid, coef, k, device="cpu"):
     -----
         x_eval : 2D torch.tensor)
             shape (number of splines, number of samples)
+            shape (layer size, batch size)
         grid : 2D torch.tensor)
             shape (number of splines, number of grid points)
+            shape (layer size, grid size)
         coef : 2D torch.tensor)
             shape (number of splines, number of coef params). number of coef params = number of grid intervals + k
+            shape (layer size, coef size)
         k : int
             the piecewise polynomial order of splines.
         device : str

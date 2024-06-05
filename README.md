@@ -6,6 +6,7 @@ We adapt the CNN to use learnable functions inspired by the KAN
 
 - Experiments
   - KAN performance on MNIST
+  - CKAN performance on MNIST
 - KAN
   - KAN
   - KANLayer
@@ -14,4 +15,4 @@ We adapt the CNN to use learnable functions inspired by the KAN
   - spline.py
   - utils.py
 
-To see KAN perform on a toy dataset, go to: kan_basic_amar.ipynb
+To see KAN perform on a toy dataset, go to: [kan_basic_amar.ipynb](kan_basic_amar.ipynb)

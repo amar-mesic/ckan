@@ -259,6 +259,12 @@ def add_symbolic(name, fun):
 
 
 
+
+
+############################################################################################################
+# OUR UTIL FUNCTIONS
+############################################################################################################
+
 def try_gpu():
     """
     If GPU is available, return torch.device as cuda:0; else return torch.device
@@ -269,3 +275,19 @@ def try_gpu():
     else:
         device = torch.device('cpu')
     return device
+
+
+
+# Function to compute min-max values
+def compute_min_max(dataset):
+    """
+    Compute the min and max values of the dataset.
+    """
+    min_val = float('inf')
+    max_val = float('-inf')
+    
+    for sample in dataset:
+        min_val = min(min_val, sample[0].min())
+        max_val = max(max_val, sample[0].max())
+    
+    return min_val, max_val
