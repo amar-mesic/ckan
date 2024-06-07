@@ -46,37 +46,70 @@ class CKANLayer(nn.Module):
 
 
 
+    # def forward(self, x):
+    #     N, _, H, W = x.shape
+    #     x_padded = F.pad(x, [self.padding, self.padding, self.padding, self.padding])
+
+    #     # Unfold to get all sliding windows - Shape becomes  (N, C*K*K, L) where L is the number of extracted windows
+    #     unfolded = F.unfold(x_padded, kernel_size=self.kernel_size, stride=self.stride, padding=0)
+    #     # .transpose(0,1).reshape(self.size, -1)
+
+    #     unfolded.transpose(1, 2).reshape(N, -1, self.in_channels, self.kernel_size, self.kernel_size)
+    #     # # Prepare unfolded for batch processing in coef2curve - Final shape becomes (C*K*K, N * L)
+    #     # unfolded = unfolded.reshape(self.size, -1)
+
+    #     # store the input for later
+    #     self.cache = unfolded
+
+    #     # Output tensor initialization
+    #     Hp = (H + 2 * self.padding - self.kernel_size) // self.stride + 1
+    #     Wp = (W + 2 * self.padding - self.kernel_size) // self.stride + 1
+    #     output = torch.zeros((self.out_channels, N, Hp, Wp), device=self.device)
+
+    #     # Loop through each output channel
+    #     for c in range(self.out_channels):
+    #         # This calculates w_b*b(x) - Output shape - (1, N * L)
+    #         base_values = F.linear(F.silu(unfolded).t(), self.base_weights[c])
+
+    #         # This calculates w_s*spline(x) - Output shape - (1, N * L). Instead of summing the spline values as before, we use (C*K*K, 1) dimensional weights
+    #         spline_values = F.linear(spline.coef2curve(unfolded, self.knots, self.coeff[c], self.degree, device=self.device).t(), self.spline_weights[c])
+
+    #         res_values = base_values + spline_values 
+    #         output[c] = res_values.view(N, Hp, Wp)
+        
+    #     return output.transpose(0, 1)
+
+
     def forward(self, x):
         N, _, H, W = x.shape
         x_padded = F.pad(x, [self.padding, self.padding, self.padding, self.padding])
 
         # Unfold to get all sliding windows - Shape becomes  (N, C*K*K, L) where L is the number of extracted windows
-        unfolded = F.unfold(x_padded, kernel_size=self.kernel_size, stride=self.stride, padding=0).reshape(self.size, -1)
+        unfolded = F.unfold(x_padded, kernel_size=self.kernel_size, stride=self.stride, padding=0)
 
-        # unfolded.transpose(1, 2).reshape(N, -1, self.in_channels, self.kernel_size, self.kernel_size)
-        # # Prepare unfolded for batch processing in coef2curve - Final shape becomes (C*K*K, N * L)
-        # unfolded = unfolded.reshape(self.size, -1)
+        unfolded = unfolded.transpose(1, 2).reshape(N, -1, self.in_channels, self.kernel_size, self.kernel_size)
 
-        # store the input for later
-        self.cache = unfolded
+        # Prepare unfolded for batch processing in coef2curve - Final shape becomes (C*K*K, N * L)
+        unfolded = unfolded.reshape(-1, self.in_channels * self.kernel_size * self.kernel_size).t()  # (batch_size*Hp*Wp, features)
+
 
         # Output tensor initialization
         Hp = (H + 2 * self.padding - self.kernel_size) // self.stride + 1
         Wp = (W + 2 * self.padding - self.kernel_size) // self.stride + 1
-        output = torch.zeros((self.out_channels, N, Hp, Wp), device=self.device)
+        output = torch.zeros((N, self.out_channels, Hp, Wp), device=self.device)
 
         # Loop through each output channel
         for c in range(self.out_channels):
             # This calculates w_b*b(x) - Output shape - (1, N * L)
-            base_values = F.linear(F.silu(unfolded).t(), self.base_weights[c])
-
+            base_values = F.linear(F.silu(unfolded).t(), self.base_weights[c]).t()
             # This calculates w_s*spline(x) - Output shape - (1, N * L). Instead of summing the spline values as before, we use (C*K*K, 1) dimensional weights
-            spline_values = F.linear(spline.coef2curve(unfolded, self.knots, self.coeff[c], self.degree, device=self.device).t(), self.spline_weights[c])
-
+            spline_values = F.linear(spline.coef2curve(unfolded, self.knots, self.coeff[c], self.degree, device=self.device).t(), self.spline_weights[c], device=self.device).t()
             res_values = base_values + spline_values 
-            output[c] = res_values.view(N, Hp, Wp)
+            output[:, c, :, :] = res_values.view(N, Hp, Wp)
         
-        return output.transpose(0, 1)
+        return output
+    
+
     
 
     def update_grid(self, new_grid):
@@ -91,9 +124,9 @@ class CKANLayer(nn.Module):
             # x = self.cache if self.cache is not None else torch.zeros(self.size, 1)
             # as recommended, use the grid points to calculate the new coefficients because they are evenely spaced
             x = new_knots
-            y = spline.coef2curve(x, self.knots, self.coeff[i], self.degree)
+            y = spline.coef2curve(x, self.knots, self.coeff[i], self.degree, device=self.device)
 
-            new_coeffs_data[i] = spline.curve2coef(x, y, new_knots, self.degree)
+            new_coeffs_data[i] = spline.curve2coef(x, y, new_knots, self.degree, device=self.device)
 
         # Update the grid points for the spline
         self.grid = new_grid
