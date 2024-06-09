@@ -12,8 +12,8 @@ class CNNLINNet(nn.Module):
                                 kernel_size=3,
                                 padding=1, device=device)
         self.conv2 =  nn.Conv2d(hidden_channels[0], hidden_channels[1],
-                        kernel_size=3,
-                        padding=1, device=device)
+                                kernel_size=3,
+                                padding=1, device=device)
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(2)
         self.linear1 = nn.Linear(7*7*hidden_channels[1], out_features)
