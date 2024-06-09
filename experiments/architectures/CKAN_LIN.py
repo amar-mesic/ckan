@@ -5,20 +5,20 @@ from CKAN import *
 import torch.nn as nn
 
 
-class CKANNet(nn.Module):
+class CKANLINNet(nn.Module):
     """
     Architecture for a CKAN model with a normal Linear FF layer
     """
-    def __init__(self, channels, out_features, grid, device='cuda:0'):
-          super(CKANNet, self).__init__()
-          self.conv1 = CKANLayer(channels[0], channels[1],
+    def __init__(self, in_channels, hidden_channels, out_features, grid, device='cuda:0'):
+          super(CKANLINNet, self).__init__()
+          self.conv1 = CKANLayer(in_channels, hidden_channels[0],
                                   kernel_size=3,
                                   padding=1, grid=grid, device=device)
-          self.conv2 = CKANLayer(channels[1], channels[2],
+          self.conv2 = CKANLayer(hidden_channels[0], hidden_channels[1],
                                 kernel_size=3,
                                 padding=1, grid=grid, device=device)
           self.max_pool = nn.MaxPool2d(2)
-          self.linear1 = nn.Linear(7*7*channels[-1], out_features)
+          self.linear1 = nn.Linear(7*7*hidden_channels[1], out_features)
 
     def forward(self, x):
         # First convolutional layer
