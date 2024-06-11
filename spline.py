@@ -135,9 +135,11 @@ def curve2coef(x_eval, y_eval, grid, k, device="cuda:0"):
     >>> grids = torch.einsum('i,j->ij', torch.ones(num_spline,), torch.linspace(-1,1,steps=num_grid_interval+1))
     torch.Size([5, 13])
     '''
-    # x_eval: (size, batch); y_eval: (size, batch); grid: (size, grid); k: scalar
+    # x_eval: (size, grid + 1); y_eval: (size, grid + 1); grid: (size, grid + 1); k: scalar
     mat = B_batch(x_eval, grid, k, device=device).permute(0, 2, 1)
-    # coef = torch.linalg.lstsq(mat, y_eval.unsqueeze(dim=2)).solution[:, :, 0]
-    coef = torch.linalg.lstsq(mat.to(device), y_eval.unsqueeze(dim=2).to(device),
-                              driver='gelsy' if device == 'cpu' else 'gels').solution[:, :, 0]
-    return coef.to(device)
+    size, _, coeff_size = mat.shape
+    l = 0.001
+    reg_term = l * torch.eye(coeff_size, device=device)
+
+    coef = torch.bmm(torch.linalg.pinv(mat.transpose(1, 2) @ mat + reg_term.repeat(size, 1, 1)) @ mat.transpose(1, 2), y_eval.unsqueeze(2))
+    return coef.squeeze().to(device)
