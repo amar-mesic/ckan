@@ -24,15 +24,12 @@ class CNNLINNet(nn.Module):
         self.conv5 = nn.Conv2d(hidden_channels[3], hidden_channels[4], kernel_size=3, padding=1, device=device)
         self.bn5 = nn.BatchNorm2d(hidden_channels[4])
         
-        self.conv6 = nn.Conv2d(hidden_channels[4], hidden_channels[5], kernel_size=3, padding=1, device=device)
-        self.bn6 = nn.BatchNorm2d(hidden_channels[5])
-        
         # Initialize other layers
         self.relu = nn.ReLU()
         self.max_pool = nn.MaxPool2d(2)
         self.dropout = nn.Dropout(0.2)
         final_dim = input_size // 8  # Calculate dimension for linear layer input
-        self.linear1 = nn.Linear(final_dim * final_dim * hidden_channels[5], out_features)
+        self.linear1 = nn.Linear(final_dim * final_dim * hidden_channels[4], out_features)
 
     def forward(self, x):
         # First set of layers
@@ -57,14 +54,11 @@ class CNNLINNet(nn.Module):
         x = self.max_pool(x)
         x = self.dropout(x)
 
-        # Third set of layers
+        # # Third set of layers
         x = self.conv5(x)
         x = self.bn5(x)
         x = self.relu(x)
         
-        x = self.conv6(x)
-        x = self.bn6(x)
-        x = self.relu(x)
         x = self.max_pool(x)
         x = self.dropout(x)
 
