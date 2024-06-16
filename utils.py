@@ -283,6 +283,7 @@ def compute_min_max(dataset):
     """
     Compute the min and max values of the dataset.
     """
+
     min_val = float('inf')
     max_val = float('-inf')
     

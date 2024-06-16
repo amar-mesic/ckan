@@ -103,7 +103,7 @@ class CKANLayer(nn.Module):
             # This calculates w_b*b(x) - Output shape - (1, N * L)
             base_values = F.linear(F.silu(unfolded).t(), self.base_weights[c]).t()
             # This calculates w_s*spline(x) - Output shape - (1, N * L). Instead of summing the spline values as before, we use (C*K*K, 1) dimensional weights
-            spline_values = F.linear(spline.coef2curve(unfolded, self.knots, self.coeff[c], self.degree, device=self.device).t(), self.spline_weights[c], device=self.device).t()
+            spline_values = F.linear(spline.coef2curve(unfolded, self.knots, self.coeff[c], self.degree, device=self.device).t(), self.spline_weights[c]).t()
             res_values = base_values + spline_values 
             output[:, c, :, :] = res_values.view(N, Hp, Wp)
         

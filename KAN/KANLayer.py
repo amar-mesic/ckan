@@ -11,7 +11,7 @@ import spline
 # creating a KAN layer from scratch
 class MyKANLayer(nn.Module):
 
-    def __init__(self, in_dim, out_dim, grid, degree=3, approx_type="taylor", grid_range=[-1, 1], device='cpu'):
+    def __init__(self, in_dim, out_dim, grid, degree=3, approx_type="taylor", grid_range=[-1, 1], device='cuda:0'):
         super(MyKANLayer, self).__init__()
 
         # initiliaze variables about the layer
@@ -23,6 +23,7 @@ class MyKANLayer(nn.Module):
         self.grid_range = grid_range
         self.cache = None
         self.approx_type = approx_type
+        self.device = device
 
         # The spline function requires three parameters: knots, coeff, and degree
         # knots: the grid points for the spline
@@ -57,13 +58,13 @@ class MyKANLayer(nn.Module):
 
         # calcuate the output of the spline functions
         if self.approx_type == "spline":
-            spline_values = spline.coef2curve(x, knots, coeff, self.degree)
+            spline_values = spline.coef2curve(x, knots, coeff, self.degree, device=self.device)
             out = spline_values
 
         else:
             # TODO: see if we can vectorize this
             for i in range(self.size):
-                taylor_values = self.evaluate_taylor_series(x[i], coeff[i], self.degree)
+                taylor_values = self.evaluate_taylor_series(x[i], coeff[i], self.degree, device=self.device)
                 out[i] = taylor_values
 
 
@@ -77,15 +78,15 @@ class MyKANLayer(nn.Module):
 
     def update_grid(self, new_grid):
         x = self.cache if self.cache is not None else torch.zeros(self.size, 1)
-        y = spline.coef2curve(x, self.knots, self.coeff, self.degree)
+        y = spline.coef2curve(x, self.knots, self.coeff, self.degree, device=self.device)
         # Update the grid points for the spline
         self.grid = new_grid
-        self.knots.data = torch.linspace(self.grid_range[0], self.grid_range[1], steps=new_grid + 1, device=self.knots.device).repeat(self.size, 1)
+        self.knots.data = torch.linspace(self.grid_range[0], self.grid_range[1], steps=new_grid + 1, device=self.device).repeat(self.size, 1)
 
         # self.coeff = nn.Parameter(0.1 * torch.randn(self.size, new_grid + self.degree if self.approx_type == "spline" else 1 + self.degree, device=self.coeff.device), requires_grad=True)
         self.coeff.data = spline.curve2coef(x, y, self.knots, self.degree)
 
-        test = spline.coef2curve(x, self.knots, self.coeff, self.degree)
+        test = spline.coef2curve(x, self.knots, self.coeff, self.degree, device=self.device)
         # print(f"Old y: {y[0:5, 0]}\nNew y: {test[0:5, 0]}")
         # print("self.coeff.shape: ", self.coeff.shape)
 
